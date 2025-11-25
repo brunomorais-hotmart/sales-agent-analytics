@@ -8,6 +8,7 @@ on:
 jobs:
   run-knit:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,3 +25,9 @@ jobs:
 
       - name: Run knit.R
         run: Rscript knit.R
+
+      - name: Upload HTML output
+        uses: actions/upload-artifact@v4
+        with:
+          name: report
+          path: output.html   # change this if your script produces a different HTML filename
