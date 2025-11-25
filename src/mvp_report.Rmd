@@ -64,10 +64,9 @@ tags$style(HTML("
 
 ```{r data, include=FALSE, cache=TRUE}
 # Source Hotmart API functions
-source("src/astrobox-api/hotmart_utils.R")
-source("src/astrobox-api/hotmart_auth.R")
-source("src/astrobox-api/hotmart_api.R") 
-
+source("./astrobox-api/hotmart_utils.R")
+source("./astrobox-api/hotmart_auth.R")
+source("./astrobox-api/hotmart_api.R") 
 # Setup Hotmart credentials (uncomment if running for first time)
 # setup_hotmart_credentials()
 
