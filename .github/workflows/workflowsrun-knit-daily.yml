@@ -34,7 +34,7 @@ jobs:
             rmarkdown
 
       - name: Run knit.R
-        run: Rscript knit.R
+        run: Rscript src/knit.R
 
       - name: Ensure reports directory exists & move report
         run: |
