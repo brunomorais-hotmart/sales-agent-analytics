@@ -2,13 +2,12 @@ name: Run knit.R Daily
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # every day at midnight UTC
-  workflow_dispatch:      # allows manual triggering too
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
-  run-knit:
+  report-job:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,8 +25,30 @@ jobs:
       - name: Run knit.R
         run: Rscript knit.R
 
-      - name: Upload HTML output
-        uses: actions/upload-artifact@v4
+      # Move all .html files to reports/
+      - name: Ensure reports directory exists & move report
+        run: |
+          mkdir -p reports
+          mv *.html reports/
+
+      # Add and commit the HTML report, whatever its name
+      - name: Set up git user
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+      - name: Add and commit report(s)
+        run: |
+          git add reports/*.html
+          git commit -m "Add/update report [skip ci]" || echo "Nothing to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload the HTML file to Google Drive (using a wildcard for dynamic filename)
+      - name: Upload dynamically named report to Google Drive
+        uses: ikreymer/action-upload-google-drive@v1
         with:
-          name: report
-          path: output.html   # change this if your script produces a different HTML filename
+          service_account_json: ${{ secrets.GDRIVE_SERVICE_ACCOUNT }}
+          src: reports/*.html
+          dest: 1QSe67KJZ-Z6KlKrcl1Up2lBwet7jP3aG
