@@ -33,13 +33,12 @@ jobs:
             DT
             rmarkdown
 
-      - name: Run knit.R
-        run: Rscript src/knit.R
-
-      - name: Ensure reports directory exists & move report
+      - name: Ensure reports directory exists
         run: |
           mkdir -p reports
-          mv *.html reports/
+
+      - name: Run knit.R
+        run: Rscript src/knit.R
 
       - name: Set up git user
         run: |
