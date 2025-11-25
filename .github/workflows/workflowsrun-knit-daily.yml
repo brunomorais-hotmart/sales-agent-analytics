@@ -47,33 +47,3 @@ jobs:
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Upload report(s) to Google Drive
-      - name: Install Google Drive API Python client
-        run: pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
-
-      - name: Upload report(s) to Google Drive
-        env:
-          GDRIVE_CREDS: ${{ secrets.GDRIVE_SERVICE_ACCOUNT }}
-          GDRIVE_FOLDER_ID: 1QSe67KJZ-Z6KlKrcl1Up2lBwet7jP3aG
-        run: |
-          echo "${GDRIVE_CREDS}" > /tmp/gdrive_creds.json
-          python3 <<EOF
-          import os
-          from glob import glob
-          from google.oauth2 import service_account
-          from googleapiclient.discovery import build
-          from googleapiclient.http import MediaFileUpload
-          
-          creds = service_account.Credentials.from_service_account_file('/tmp/gdrive_creds.json', scopes=['https://www.googleapis.com/auth/drive'])
-          service = build('drive', 'v3', credentials=creds)
-          
-          html_files = glob('reports/*.html')
-          if not html_files:
-              print("No HTML reports found to upload.")
-          for filename in html_files:
-              file_metadata = {'name': os.path.basename(filename), 'parents': [os.environ['GDRIVE_FOLDER_ID']]}
-              media = MediaFileUpload(filename, mimetype='text/html')
-              file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-              print('Uploaded to Google Drive:', filename, 'File ID:', file.get('id'))
-          EOF
