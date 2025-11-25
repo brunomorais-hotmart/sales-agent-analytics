@@ -3,6 +3,6 @@ dynamic_filename <- paste("MVP_Report", format(Sys.Date()-1, format = '%d%m'), s
 
 # Render the R Markdown document with the dynamic filename
 rmarkdown::render(
-  input = "mvp_report.Rmd",
+  input = "src/mvp_report.Rmd",
   output_file = paste0("/reports", dynamic_filename, ".html")
 )
