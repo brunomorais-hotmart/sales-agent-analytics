@@ -1,0 +1,481 @@
+---
+title: "`r paste('MVP Report:', '19/11', 'to', format(Sys.Date() - 1, format = '%d/%m'))`"
+output: 
+  flexdashboard::flex_dashboard:
+    theme:
+      version: 4
+      bg: "#FDF7F7" 
+      fg: "#101010"
+      primary: "#f04e23"
+      navbar-bg: "#f04e23"
+      base_font: 
+        google: Prompt
+      heading_font:
+        google: Sen
+      code_font:
+        google: 
+          # arguments to sass::font_google() 
+          family: JetBrains Mono
+          local: false
+    orientation: columns
+    vertical_layout: fill
+encoding: "UTF-8"
+
+---
+
+```{r setup, include=FALSE, cache=FALSE}
+library(flexdashboard)
+library(dplyr)
+# library(ggplot2)
+# library(plotly)
+library(knitr)
+library(htmltools)
+# library(patchwork)
+# library(tidyr)
+library(DT)
+
+
+# Set knitr options
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+```{r css, echo=FALSE}
+
+tags$style(HTML("
+  .value-box {
+    height: 100% !important;
+  }
+  .chart-wrapper {
+    height: 100% !important;
+  }
+  .value-box .inner {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+  .section.level3 {
+    height: 100% !important;
+  }
+"))
+```
+
+
+```{r data, include=FALSE, cache=TRUE}
+# Source Hotmart API functions
+source("hotmart_utils.R")
+source("hotmart_auth.R")
+source("hotmart_api.R") 
+
+# Setup Hotmart credentials (uncomment if running for first time)
+# setup_hotmart_credentials()
+
+# Get authentication token
+token <- hotmart_auth()
+
+# Load your data
+etl_data <- astrobox_request(
+  "b5f2524a-5d3d-4a31-8801-c92c2e0714b4",
+  token = token,
+  return_df = TRUE,
+  parameters = list(
+    product_id = 337703,
+    startDate = '2025-11-19'
+    )
+  )
+
+sckpayment_data <- astrobox_request(
+  "ace3727d-8935-46c3-b7c7-74973a5b9956",
+  token = token,
+  return_df = TRUE,
+  parameters = list(
+    product_id = 337703,
+    startDate = '2025-11-19'
+    )
+  )
+
+# Basic data validation
+if(is.null(etl_data) || nrow(etl_data) == 0) {
+  stop("No data returned from API")
+}
+```
+
+<!-- # Geral -->
+
+## Column Sales Agent {data-width="100"}
+
+<!-- ### Box Header Sales Agent -->
+
+<!-- ```{r} -->
+<!-- valueBox( -->
+<!--   value = "Sales Agent", -->
+<!--   caption = " ", -->
+<!--   # icon = "fa-info-circle", -->
+<!--   color = "info" -->
+<!-- ) -->
+
+<!-- ``` -->
+
+### Box Direct Sales
+
+```{r}
+direct_sales <- sum(
+  etl_data %>% 
+    filter(
+      is_sales_agent_sck == 1, 
+      is_sales_agent_transaction_approved == 1,
+      sales_agent_total_first_contact_datetime <= transaction_creation_datetime
+      ) %>%
+    pull(transaction_item_value)
+    , 
+  na.rm = TRUE
+  )
+
+valueBox(
+  value = paste0("R$", formatC(direct_sales, format = "f", digits = 0, big.mark = ",")),
+  caption = "Vendas Diretas",
+  icon = "fa-dollar-sign",
+  color = "primary"
+)
+```
+
+### Box Indirect Sales
+
+```{r}
+indirect_sales <- sum(
+  etl_data %>% 
+    filter(
+      is_sales_agent_sck == 0, 
+      is_sales_agent_transaction_approved == 1,
+      sales_agent_total_first_contact_datetime <= transaction_creation_datetime
+      ) %>%
+    pull(transaction_item_value)
+    , 
+  na.rm = TRUE
+  )
+
+valueBox(
+  value = paste0("R$", formatC(indirect_sales, format = "f", digits = 0, big.mark = ",")),
+  caption = "Vendas Indiretas",
+  icon = "fa-dollar-sign",
+  color = "primary"
+)
+```
+
+### Box Leads Reached
+
+```{r}
+leads_reached <-nrow(etl_data)
+
+valueBox(
+  value = formatC(leads_reached, format = "f", digits = 0, big.mark = ","),
+  caption = "Leads Alcançados",
+  icon = "fa-whatsapp",
+  color = "primary"
+)
+```
+
+### Box Leads Converted
+
+```{r}
+leads_reached <-nrow(etl_data[etl_data$is_sales_agent_converted == 1,])
+
+valueBox(
+  value = formatC(leads_reached, format = "f", digits = 0, big.mark = ","),
+  caption = "Leads Convertidos",
+  icon = "ion-android-cart",
+  color = "primary"
+)
+```
+
+### Box Conversion Rate
+
+```{r}
+conversion_rate <- round((nrow(etl_data[etl_data$is_sales_agent_converted == 1,])/nrow(etl_data)) * 100, 2)
+
+valueBox(
+  value = paste0(formatC(conversion_rate, format = "f", digits = 1, big.mark = ","), '%'),
+  caption = "Taxa de Conversão",
+  icon = "ion-funnel",
+  color = "primary"
+)
+```
+
+### Box Response Rate
+
+```{r}
+response_rate <- round((nrow(etl_data[etl_data$sales_agent_user_message_quantity > 0,])/nrow(etl_data)) * 100, 2)
+
+valueBox(
+  value = paste0(formatC(response_rate, format = "f", digits = 1, big.mark = ","), '%'),
+  caption = "Taxa de Resposta",
+  icon = "ion-ios-pulse",
+  color = "primary"
+)
+```
+
+## Column {data-width="350"}
+
+### Tráfego no Checkout por Vendedor (Apenas Vendas Diretas) {#chart-a-panel}
+
+```{r}
+
+table_sck_display <- sckpayment_data %>%
+  arrange(desc(total_gmv)) %>%
+  rename(
+    "SCK" = sck_value,
+    "Sessões Criadas" = unique_session_count,
+    "Sessões Com Venda" = sessions_with_sales,
+    "GMV (R$)" = total_gmv
+  ) %>%
+  datatable(
+    rownames = FALSE,
+    options = list(
+      pageLength = -1,
+      scrollX = FALSE,
+      dom = 't',
+      columnDefs = list(
+        list(className = 'dt-center', targets = 0:2),
+        list(className = 'dt-right', targets = 3)
+      )
+    )
+  ) %>%
+  formatCurrency("GMV (R$)", currency = "R$$ ", digits = 0, dec.mark = ",", mark = ".") %>%
+  formatStyle(
+    columns = 1:4, 
+    fontSize = '14px',
+    backgroundColor = 'white'
+  ) %>%
+  formatStyle(
+    columns = "GMV (R$)",
+    fontWeight = 'bold'
+  )
+
+table_sck_display
+
+```
+
+### Detalhes das Transações
+
+```{r}
+
+table_sales_data <- etl_data %>%
+  filter(is_sales_agent_transaction_approved == 1) %>%
+  select(
+    transaction_creation_datetime,
+    transaction_reference,
+    transaction_item_value,
+    sales_agent_phone_user_number,
+    sales_agent_user_message_quantity,
+    sales_agent_system_message_quantity,
+    product_offer_contacted_key,
+    product_offer_purchased_key,
+    is_sales_agent_sck,
+    ) %>%
+  arrange(desc(transaction_creation_datetime)) %>%
+  mutate(
+    transaction_creation_datetime = as.Date(transaction_creation_datetime),
+    is_sales_agent_sck = ifelse(is_sales_agent_sck == 1, "Sim", "Não")
+  ) %>%
+  rename(
+     "Data de Transação"= transaction_creation_datetime,
+     "HP da Transação"= transaction_reference,
+     "Valor"= transaction_item_value,
+     "Telefone do Buyer"= sales_agent_phone_user_number,
+     "N Mensagens do Buyer"= sales_agent_user_message_quantity,
+     "N Mensagens do Sales Agent"= sales_agent_system_message_quantity,
+     "Offer Contactada"= product_offer_contacted_key,
+     "Offer Comprada"= product_offer_purchased_key,
+     "Venda Direta"= is_sales_agent_sck
+  ) %>%
+  datatable(
+    rownames = FALSE,
+    options = list(
+      pageLength = -1,
+      scrollX = FALSE,
+      dom = 'f',
+      columnDefs = list(
+        list(className = 'dt-center', targets = 0:2),
+        list(className = 'dt-right', targets = 3)
+      )
+    )
+  ) %>%
+  formatCurrency("Valor", currency = "R$$ ", digits = 0, dec.mark = ",", mark = ".") %>%
+  formatStyle(
+    columns = 1:4, 
+    fontSize = '14px',
+    backgroundColor = 'white'
+  ) %>%
+  formatStyle(
+    columns = "Valor",
+    fontWeight = 'bold'
+  )
+  
+
+table_sales_data
+
+```
+
+<!-- # Fluxo Diário -->
+
+<!-- ## Column Sales Agent {data-width="100"} -->
+
+<!-- ### Box Direct Sales -->
+
+<!-- ```{r} -->
+<!-- direct_sales <- sum( -->
+<!--   etl_data %>%  -->
+<!--     filter( -->
+<!--       is_sales_agent_direct == 1,  -->
+<!--       is_sales_agent_transaction_approved == 1, -->
+<!--       sales_agent_total_first_contact_datetime <= transaction_creation_datetime -->
+<!--       ) %>% -->
+<!--     pull(transaction_item_value) -->
+<!--     ,  -->
+<!--   na.rm = TRUE -->
+<!--   ) -->
+
+<!-- valueBox( -->
+<!--   value = paste0("R$", formatC(direct_sales, format = "f", digits = 0, big.mark = ",")), -->
+<!--   caption = "Vendas Diretas", -->
+<!--   icon = "fa-dollar-sign", -->
+<!--   color = "primary" -->
+<!-- ) -->
+<!-- ``` -->
+
+<!-- ### Box Indirect Sales -->
+
+<!-- ```{r} -->
+<!-- indirect_sales <- sum( -->
+<!--   etl_data %>%  -->
+<!--     filter( -->
+<!--       is_sales_agent_direct == 0,  -->
+<!--       is_sales_agent_transaction_approved == 1, -->
+<!--       sales_agent_total_first_contact_datetime <= transaction_creation_datetime -->
+<!--       ) %>% -->
+<!--     pull(transaction_item_value) -->
+<!--     ,  -->
+<!--   na.rm = TRUE -->
+<!--   ) -->
+
+<!-- valueBox( -->
+<!--   value = paste0("R$", formatC(indirect_sales, format = "f", digits = 0, big.mark = ",")), -->
+<!--   caption = "Vendas Indiretas", -->
+<!--   icon = "fa-dollar-sign", -->
+<!--   color = "primary" -->
+<!-- ) -->
+<!-- ``` -->
+
+<!-- ### Box Leads Reached -->
+
+<!-- ```{r} -->
+<!-- leads_reached <-nrow(etl_data) -->
+
+<!-- valueBox( -->
+<!--   value = formatC(leads_reached, format = "f", digits = 0, big.mark = ","), -->
+<!--   caption = "Leads Alcançados", -->
+<!--   icon = "fa-whatsapp", -->
+<!--   color = "primary" -->
+<!-- ) -->
+<!-- ``` -->
+
+<!-- ### Box Leads Converted -->
+
+<!-- ```{r} -->
+<!-- leads_reached <-nrow(etl_data[etl_data$is_sales_agent_converted == 1,]) -->
+
+<!-- valueBox( -->
+<!--   value = formatC(leads_reached, format = "f", digits = 0, big.mark = ","), -->
+<!--   caption = "Leads Convertidos", -->
+<!--   icon = "ion-android-cart", -->
+<!--   color = "primary" -->
+<!-- ) -->
+<!-- ``` -->
+
+<!-- ### Box Conversion Rate -->
+
+<!-- ```{r} -->
+<!-- conversion_rate <- round((nrow(etl_data[etl_data$is_sales_agent_converted == 1,])/nrow(etl_data)) * 100, 2) -->
+
+<!-- valueBox( -->
+<!--   value = paste0(formatC(conversion_rate, format = "f", digits = 1, big.mark = ","), '%'), -->
+<!--   caption = "Taxa de Conversão", -->
+<!--   icon = "ion-funnel", -->
+<!--   color = "primary" -->
+<!-- ) -->
+<!-- ``` -->
+
+<!-- ### Box Response Rate -->
+
+<!-- ```{r} -->
+<!-- response_rate <- round((nrow(etl_data[etl_data$sales_agent_user_message_quantity > 0,])/nrow(etl_data)) * 100, 2) -->
+
+<!-- valueBox( -->
+<!--   value = paste0(formatC(response_rate, format = "f", digits = 1, big.mark = ","), '%'), -->
+<!--   caption = "Taxa de Resposta", -->
+<!--   icon = "ion-ios-pulse", -->
+<!--   color = "primary" -->
+<!-- ) -->
+<!-- ``` -->
+
+<!-- ## Column {data-width="350"} -->
+
+<!-- ### Chart 3 -->
+
+<!-- ```{r} -->
+<!-- table_sales_data <- etl_data %>% -->
+<!--   filter(is_sales_agent_transaction_approved == 1) %>% -->
+<!--   select( -->
+<!--     transaction_creation_datetime, -->
+<!--     transaction_reference, -->
+<!--     transaction_item_value, -->
+<!--     sales_agent_phone_user_number, -->
+<!--     sales_agent_user_message_quantity, -->
+<!--     sales_agent_system_message_quantity, -->
+<!--     product_offer_contacted_key, -->
+<!--     product_offer_purchased_key, -->
+<!--     is_sales_agent_sck -->
+<!--     ) %>% -->
+<!--   arrange(desc(transaction_creation_datetime)) %>% -->
+<!--   mutate( -->
+<!--     transaction_creation_datetime = as.Date(transaction_creation_datetime), -->
+<!--     is_sales_agent_sck = ifelse(is_sales_agent_sck == 1, "Sim", "Não") -->
+<!--   ) %>% -->
+<!--   rename( -->
+<!--      "Data de Transação"= transaction_creation_datetime, -->
+<!--      "HP da Transação"= transaction_reference, -->
+<!--      "Valor"= transaction_item_value, -->
+<!--      "Telefone do Buyer"= sales_agent_phone_user_number, -->
+<!--      "N Mensagens do Buyer"= sales_agent_user_message_quantity, -->
+<!--      "N Mensagens do Sales Agent"= sales_agent_system_message_quantity, -->
+<!--      "Offer Contactada"= product_offer_contacted_key, -->
+<!--      "Offer Comprada"= product_offer_purchased_key, -->
+<!--      "Venda Direta"= is_sales_agent_sck -->
+<!--   ) %>% -->
+<!--   datatable( -->
+<!--     rownames = FALSE, -->
+<!--     options = list( -->
+<!--       pageLength = -1, -->
+<!--       scrollX = FALSE, -->
+<!--       dom = 'f', -->
+<!--       columnDefs = list( -->
+<!--         list(className = 'dt-center', targets = 0:2), -->
+<!--         list(className = 'dt-right', targets = 3) -->
+<!--       ) -->
+<!--     ) -->
+<!--   ) %>% -->
+<!--   formatCurrency("Valor", currency = "R$$ ", digits = 0, dec.mark = ",", mark = ".") %>% -->
+<!--   formatStyle( -->
+<!--     columns = 1:4,  -->
+<!--     fontSize = '14px', -->
+<!--     backgroundColor = 'white' -->
+<!--   ) %>% -->
+<!--   formatStyle( -->
+<!--     columns = "Valor", -->
+<!--     fontWeight = 'bold' -->
+<!--   ) -->
+
+
+<!-- table_sales_data -->
+<!-- ``` -->
