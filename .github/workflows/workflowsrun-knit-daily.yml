@@ -2,7 +2,7 @@ name: Run knit.R Daily
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 9 * * *'  # 6 AM Brazil time (UTC-3)
   workflow_dispatch:
 
 jobs:
