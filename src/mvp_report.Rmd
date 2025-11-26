@@ -70,8 +70,19 @@ source("./astrobox-api/hotmart_api.R")
 # Setup Hotmart credentials (uncomment if running for first time)
 # setup_hotmart_credentials()
 
-# Get authentication token
-token <- hotmart_auth()
+# Get authentication token - check for environment variables first (for CI)
+if (Sys.getenv("HOTMART_USERNAME") != "" && Sys.getenv("HOTMART_PASSWORD") != "") {
+  # Running in CI environment - use environment variables
+  token <- hotmart_auth(
+    username = Sys.getenv("HOTMART_USERNAME"),
+    password = Sys.getenv("HOTMART_PASSWORD"),
+    client_id = Sys.getenv("HOTMART_CLIENT_ID"),
+    client_secret = Sys.getenv("HOTMART_CLIENT_SECRET")
+  )
+} else {
+  # Running locally - use cached credentials
+  token <- hotmart_auth()
+}
 
 # Load your data
 etl_data <- astrobox_request(
