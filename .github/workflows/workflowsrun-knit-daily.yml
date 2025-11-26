@@ -39,6 +39,9 @@ jobs:
 
       - name: Run knit.R
         run: Rscript src/knit.R
+        env:
+          HOTMART_USERNAME: ${{ secrets.HOTMART_USERNAME }}
+          HOTMART_PASSWORD: ${{ secrets.HOTMART_PASSWORD }}
 
       - name: Set up git user
         run: |
