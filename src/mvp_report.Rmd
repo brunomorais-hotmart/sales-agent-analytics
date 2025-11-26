@@ -75,9 +75,7 @@ if (Sys.getenv("HOTMART_USERNAME") != "" && Sys.getenv("HOTMART_PASSWORD") != ""
   # Running in CI environment - use environment variables
   token <- hotmart_auth(
     username = Sys.getenv("HOTMART_USERNAME"),
-    password = Sys.getenv("HOTMART_PASSWORD"),
-    client_id = Sys.getenv("HOTMART_CLIENT_ID"),
-    client_secret = Sys.getenv("HOTMART_CLIENT_SECRET")
+    password = Sys.getenv("HOTMART_PASSWORD")
   )
 } else {
   # Running locally - use cached credentials
