@@ -62,7 +62,7 @@ tags$style(HTML("
 ```
 
 
-```{r data, include=FALSE, cache=TRUE}
+```{r data, include=FALSE, cache=FALSE}
 # Source Hotmart API functions
 source("./astrobox-api/hotmart_utils.R")
 source("./astrobox-api/hotmart_auth.R")
@@ -228,7 +228,7 @@ table_sck_display <- sckpayment_data %>%
       )
     )
   ) %>%
-  formatCurrency("GMV (R$)", currency = "R$$ ", digits = 0, dec.mark = ",", mark = ".") %>%
+  formatCurrency("GMV (R$)", currency = "R$ ", digits = 0, dec.mark = ",", mark = ".") %>%
   formatStyle(
     columns = 1:4, 
     fontSize = '14px',
@@ -288,7 +288,7 @@ table_sales_data <- etl_data %>%
       )
     )
   ) %>%
-  formatCurrency("Valor", currency = "R$$ ", digits = 0, dec.mark = ",", mark = ".") %>%
+  formatCurrency("Valor", currency = "R$ ", digits = 0, dec.mark = ",", mark = ".") %>%
   formatStyle(
     columns = 1:4, 
     fontSize = '14px',
@@ -452,7 +452,7 @@ table_sales_data
 <!--       ) -->
 <!--     ) -->
 <!--   ) %>% -->
-<!--   formatCurrency("Valor", currency = "R$$ ", digits = 0, dec.mark = ",", mark = ".") %>% -->
+<!--   formatCurrency("Valor", currency = "R$ ", digits = 0, dec.mark = ",", mark = ".") %>% -->
 <!--   formatStyle( -->
 <!--     columns = 1:4,  -->
 <!--     fontSize = '14px', -->
