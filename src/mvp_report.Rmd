@@ -91,6 +91,14 @@ etl_data <- astrobox_request(
     product_id = 337703,
     startDate = '2025-11-19'
     )
+  ) %>% mutate(
+    is_sales_agent_valid = ifelse(
+      !is.na(transaction_creation_datetime) & 
+        sales_agent_total_first_contact_datetime > transaction_creation_datetime, 
+      1, 
+      0
+      ),
+    product_offer_purchased_key = product_offer_key
   )
 
 sckpayment_data <- astrobox_request(
@@ -121,9 +129,9 @@ direct_sales <- sum(
     filter(
       is_sales_agent_sck == 1, 
       is_sales_agent_transaction_approved == 1,
-      sales_agent_total_first_contact_datetime <= transaction_creation_datetime
+      sales_agent_total_first_contact_datetime <= transaction_creation_datetime_hotpay
       ) %>%
-    pull(transaction_item_value)
+    pull(transaction_value)
     , 
   na.rm = TRUE
   )
@@ -144,9 +152,9 @@ indirect_sales <- sum(
     filter(
       is_sales_agent_sck == 0, 
       is_sales_agent_transaction_approved == 1,
-      sales_agent_total_first_contact_datetime <= transaction_creation_datetime
+      sales_agent_total_first_contact_datetime <= transaction_creation_datetime_hotpay
       ) %>%
-    pull(transaction_item_value)
+    pull(transaction_value)
     , 
   na.rm = TRUE
   )
@@ -193,6 +201,19 @@ conversion_rate <- round((nrow(etl_data[etl_data$is_sales_agent_converted == 1,]
 valueBox(
   value = paste0(formatC(conversion_rate, format = "f", digits = 1, big.mark = ","), '%'),
   caption = "Taxa de Conversão",
+  icon = "ion-funnel",
+  color = "primary"
+)
+```
+
+### Box Conversion Rate Direct
+
+```{r}
+conversion_rate_direct <- round((nrow(etl_data[etl_data$is_sales_agent_converted == 1 & etl_data$is_sales_agent_sck == 1, ])/nrow(etl_data)) * 100, 2)
+
+valueBox(
+  value = paste0(formatC(conversion_rate_direct, format = "f", digits = 1, big.mark = ","), '%'),
+  caption = "Taxa de Conversão Direta",
   icon = "ion-funnel",
   color = "primary"
 )
@@ -259,9 +280,9 @@ table_sck_display
 table_sales_data <- etl_data %>%
   filter(is_sales_agent_transaction_approved == 1) %>%
   select(
-    transaction_creation_datetime,
+    transaction_creation_datetime_hotpay,
     transaction_reference,
-    transaction_item_value,
+    transaction_value,
     sales_agent_phone_user_number,
     sales_agent_user_message_quantity,
     sales_agent_system_message_quantity,
@@ -269,15 +290,15 @@ table_sales_data <- etl_data %>%
     product_offer_purchased_key,
     is_sales_agent_sck,
     ) %>%
-  arrange(desc(transaction_creation_datetime)) %>%
+  arrange(desc(transaction_creation_datetime_hotpay)) %>%
   mutate(
-    transaction_creation_datetime = as.Date(transaction_creation_datetime),
+    transaction_creation_datetime_hotpay = as.Date(transaction_creation_datetime_hotpay),
     is_sales_agent_sck = ifelse(is_sales_agent_sck == 1, "Sim", "Não")
   ) %>%
   rename(
-     "Data de Transação"= transaction_creation_datetime,
+     "Data de Transação"= transaction_creation_datetime_hotpay,
      "HP da Transação"= transaction_reference,
-     "Valor"= transaction_item_value,
+     "Valor"= transaction_value,
      "Telefone do Buyer"= sales_agent_phone_user_number,
      "N Mensagens do Buyer"= sales_agent_user_message_quantity,
      "N Mensagens do Sales Agent"= sales_agent_system_message_quantity,
@@ -325,9 +346,9 @@ table_sales_data
 <!--     filter( -->
 <!--       is_sales_agent_direct == 1,  -->
 <!--       is_sales_agent_transaction_approved == 1, -->
-<!--       sales_agent_total_first_contact_datetime <= transaction_creation_datetime -->
+<!--       sales_agent_total_first_contact_datetime <= transaction_creation_datetime_hotpay -->
 <!--       ) %>% -->
-<!--     pull(transaction_item_value) -->
+<!--     pull(transaction_value) -->
 <!--     ,  -->
 <!--   na.rm = TRUE -->
 <!--   ) -->
@@ -348,9 +369,9 @@ table_sales_data
 <!--     filter( -->
 <!--       is_sales_agent_direct == 0,  -->
 <!--       is_sales_agent_transaction_approved == 1, -->
-<!--       sales_agent_total_first_contact_datetime <= transaction_creation_datetime -->
+<!--       sales_agent_total_first_contact_datetime <= transaction_creation_datetime_hotpay -->
 <!--       ) %>% -->
-<!--     pull(transaction_item_value) -->
+<!--     pull(transaction_value) -->
 <!--     ,  -->
 <!--   na.rm = TRUE -->
 <!--   ) -->
@@ -423,9 +444,9 @@ table_sales_data
 <!-- table_sales_data <- etl_data %>% -->
 <!--   filter(is_sales_agent_transaction_approved == 1) %>% -->
 <!--   select( -->
-<!--     transaction_creation_datetime, -->
+<!--     transaction_creation_datetime_hotpay, -->
 <!--     transaction_reference, -->
-<!--     transaction_item_value, -->
+<!--     transaction_value, -->
 <!--     sales_agent_phone_user_number, -->
 <!--     sales_agent_user_message_quantity, -->
 <!--     sales_agent_system_message_quantity, -->
@@ -433,15 +454,15 @@ table_sales_data
 <!--     product_offer_purchased_key, -->
 <!--     is_sales_agent_sck -->
 <!--     ) %>% -->
-<!--   arrange(desc(transaction_creation_datetime)) %>% -->
+<!--   arrange(desc(transaction_creation_datetime_hotpay)) %>% -->
 <!--   mutate( -->
-<!--     transaction_creation_datetime = as.Date(transaction_creation_datetime), -->
+<!--     transaction_creation_datetime_hotpay = as.Date(transaction_creation_datetime_hotpay), -->
 <!--     is_sales_agent_sck = ifelse(is_sales_agent_sck == 1, "Sim", "Não") -->
 <!--   ) %>% -->
 <!--   rename( -->
-<!--      "Data de Transação"= transaction_creation_datetime, -->
+<!--      "Data de Transação"= transaction_creation_datetime_hotpay, -->
 <!--      "HP da Transação"= transaction_reference, -->
-<!--      "Valor"= transaction_item_value, -->
+<!--      "Valor"= transaction_value, -->
 <!--      "Telefone do Buyer"= sales_agent_phone_user_number, -->
 <!--      "N Mensagens do Buyer"= sales_agent_user_message_quantity, -->
 <!--      "N Mensagens do Sales Agent"= sales_agent_system_message_quantity, -->
