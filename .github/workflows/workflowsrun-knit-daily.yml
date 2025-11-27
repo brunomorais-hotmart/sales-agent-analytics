@@ -42,6 +42,9 @@ jobs:
         env:
           HOTMART_USERNAME: ${{ secrets.HOTMART_USERNAME }}
           HOTMART_PASSWORD: ${{ secrets.HOTMART_PASSWORD }}
+          HOTMART_PRODUCTION_TOKEN: ${{ secrets.HOTMART_PRODUCTION_TOKEN }}
+          HOTMART_STAGING_TOKEN: ${{ secrets.HOTMART_STAGING_TOKEN }}
+          HOTMART_PRODUCTION_INTERNAL_TOKEN: ${{ secrets.HOTMART_PRODUCTION_INTERNAL_TOKEN }}
 
       - name: Set up git user
         run: |

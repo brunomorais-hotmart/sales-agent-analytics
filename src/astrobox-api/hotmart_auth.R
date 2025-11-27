@@ -24,15 +24,15 @@ hotmart_auth <- function(username = NULL, password = NULL,
   config <- list(
     production = list(
       security_uri = "https://api-sec-vlc.hotmart.com/security/oauth/token",
-      auth_token = "MTJmYzVlZGUtNzRmYS00MWVjLTg4NmYtYzM4YzA4YjcxMGZmOjE4MjFhOGRlLTMxNDgtNGU3ZC05OGZmLWZkY2NiOGY0MzkzNw=="
+      auth_token = Sys.getenv("HOTMART_PRODUCTION_TOKEN")
     ),
     staging = list(
       security_uri = "https://api-security.buildstaging.com/security/oauth/token", 
-      auth_token = "YjYwMjRkNDctZWNmYi00ZDBkLWEyYTUtZmIzMjM1NTdmZDZkOjhjNGM4OTc4LTBmZTYtNGMyZS1iYzBiLTQ3MjI1YTg2MGQwNQ=="
+      auth_token = Sys.getenv("HOTMART_STAGING_TOKEN")
     ),
     production_internal = list(
       security_uri = "https://api-sec-vlc-internal.hotmart.com/security/oauth/token",
-      auth_token = "MTJmYzVlZGUtNzRmYS00MWVjLTg4NmYtYzM4YzA4YjcxMGZmOjE4MjFhOGRlLTMxNDgtNGU3ZC05OGZmLWZkY2NiOGY0MzkzNw=="
+      auth_token = Sys.getenv("HOTMART_PRODUCTION_INTERNAL_TOKEN")
     )
   )
   
