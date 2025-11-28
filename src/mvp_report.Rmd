@@ -196,7 +196,7 @@ valueBox(
 ### Box Leads Converted
 
 ```{r}
-leads_reached <-nrow(etl_data[etl_data$is_sales_agent_converted == 1,])
+leads_reached <-nrow(etl_data[etl_data$is_sales_agent_transaction_approved  == 1,])
 
 valueBox(
   value = formatC(leads_reached, format = "f", digits = 0, big.mark = ","),
@@ -209,7 +209,7 @@ valueBox(
 ### Box Conversion Rate
 
 ```{r}
-conversion_rate <- round((nrow(etl_data[etl_data$is_sales_agent_converted == 1,])/nrow(etl_data)) * 100, 2)
+conversion_rate <- round((nrow(etl_data[etl_data$is_sales_agent_transaction_approved  == 1,])/nrow(etl_data)) * 100, 2)
 
 valueBox(
   value = paste0(formatC(conversion_rate, format = "f", digits = 1, big.mark = ","), '%'),
@@ -222,7 +222,7 @@ valueBox(
 ### Box Conversion Rate Direct
 
 ```{r}
-conversion_rate_direct <- round((nrow(etl_data[etl_data$is_sales_agent_converted == 1 & etl_data$is_sales_agent_sck == 1, ])/nrow(etl_data)) * 100, 2)
+conversion_rate_direct <- round((nrow(etl_data[etl_data$is_sales_agent_transaction_approved  == 1 & etl_data$is_sales_agent_sck == 1, ])/nrow(etl_data)) * 100, 2)
 
 valueBox(
   value = paste0(formatC(conversion_rate_direct, format = "f", digits = 1, big.mark = ","), '%'),
@@ -413,7 +413,7 @@ table_sales_data
 <!-- ### Box Leads Converted -->
 
 <!-- ```{r} -->
-<!-- leads_reached <-nrow(etl_data[etl_data$is_sales_agent_converted == 1,]) -->
+<!-- leads_reached <-nrow(etl_data[etl_data$is_sales_agent_transaction_approved  == 1,]) -->
 
 <!-- valueBox( -->
 <!--   value = formatC(leads_reached, format = "f", digits = 0, big.mark = ","), -->
@@ -426,7 +426,7 @@ table_sales_data
 <!-- ### Box Conversion Rate -->
 
 <!-- ```{r} -->
-<!-- conversion_rate <- round((nrow(etl_data[etl_data$is_sales_agent_converted == 1,])/nrow(etl_data)) * 100, 2) -->
+<!-- conversion_rate <- round((nrow(etl_data[etl_data$is_sales_agent_transaction_approved  == 1,])/nrow(etl_data)) * 100, 2) -->
 
 <!-- valueBox( -->
 <!--   value = paste0(formatC(conversion_rate, format = "f", digits = 1, big.mark = ","), '%'), -->
