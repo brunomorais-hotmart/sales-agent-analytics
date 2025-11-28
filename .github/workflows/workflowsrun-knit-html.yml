@@ -36,7 +36,7 @@ jobs:
 
       - name: Ensure reports directory exists
         run: |
-          mkdir -p reports
+          mkdir -p reports docs
 
       - name: Run knit.R
         run: Rscript src/knit.R
@@ -54,7 +54,7 @@ jobs:
 
       - name: Add and commit report(s)
         run: |
-          git add reports/*.html
+          git add reports/ docs/
           git commit -m "Add/update report(s) [skip ci]" || echo "Nothing to commit"
           git push
         env:
